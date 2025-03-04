@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phelp Bird</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Tela Inicial -->
+    <div id="startScreen">
+        <h1>Phelp Bird</h1>
+        <button id="startButton">Start Game</button>
+        <p>Record: <span id="highScore">0</span></p>
+    </div>
+
+    <!-- Canvas do Jogo -->
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+    <!-- Tela de Game Over -->
+    <div id="retryButton">
+        <h2>Game Over</h2>
+        <button id="retry">Retry</button>
+    </div>
+
+    <!-- Exibição do Placar -->
+    <div id="score">Score: 0</div>
+
+    <script src="game.js"></script>
+</body>
+</html>
