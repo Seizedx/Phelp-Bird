@@ -1,72 +1,91 @@
 /* Estilo do Body */
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
+    height: 100vh;
+    width: 100vw;
+    background: #000; /* Fundo preto para o excesso */
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    background: #70c5ce; /* Cor do fundo da tela fora do canvas */
+    overflow: hidden;
 }
 
 /* Canvas */
 canvas {
-    border: 5px solid #000; /* Borda preta */
+    width: 480px;
+    height: 640px;
+    display: block;
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
 }
 
-/* Tela Inicial */
-#startScreen {
+/* Tela Inicial e Game Over (Box comum) */
+.screen-box {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     position: absolute;
     text-align: center;
-}
-
-#startScreen h1 {
-    font-size: 40px;
-    color: #fff;
-    margin-bottom: 20px;
-}
-
-#startScreen button {
-    padding: 15px 30px;
-    font-size: 18px;
-    cursor: pointer;
-    background-color: #4CAF50;
+    padding: 2rem;
+    border-radius: 10px;
     color: white;
-    border: none;
-    border-radius: 5px;
-    margin-top: 20px;
+    width: 300px;
+    height: 200px;
 }
 
-/* Tela de Retry */
+#startScreen {
+    display: flex;
+    background: url('../img/backgroungstartgame.png') no-repeat center center;
+    background-size: cover;
+}
+
 #retryButton {
     display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
+    background: url('../img/backgroundgameover.png') no-repeat center center;
+    background-size: cover;
 }
 
-#retryButton button {
-    padding: 15px 30px;
-    font-size: 18px;
+.screen-box h1, .screen-box h2 {
+    font-size: 2.5rem;
+    margin: 0 0 1rem 0;
+}
+
+.screen-box p {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+}
+
+.screen-box button {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    background-color: #f44336;
-    color: white;
     border: none;
     border-radius: 5px;
+    margin: 0.5rem 0;
 }
 
-/* Exibição do Placar */
-#score {
-    font-size: 24px;
+#startButton {
+    background-color: #4CAF50;
     color: white;
+}
+
+#retry {
+    background-color: #f44336;
+    color: white;
+}
+
+#closeButton {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    color: white;
+    font-size: 1.5rem;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
 }
