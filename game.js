@@ -1,80 +1,162 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-// Configurações editáveis do jogo (em pixels para 480x640)
+// Configurações base do jogo (valores inteiros baseados em 1)
 const gameConfig = {
-    birdWidth: 40,          // Largura base do pássaro em pixels
-    birdHeight: 40,         // Altura base do pássaro em pixels
-    gravity: 0.07,          // Gravidade do pássaro
-    lift: -3,               // Impulso do pássaro para cima
-    gameSpeed: 1,           // Velocidade geral do jogo
-    gap: 100,               // Espaço base entre os obstáculos em pixels
-    obstacleWidth: 50,      // Largura base dos obstáculos em pixels
-    obstacleSpeed: 1.5,     // Velocidade inicial dos obstáculos
-    obstacleFrequency: 300, // Frequência de criação dos obstáculos (frames)
-    birdStartX: 50,         // Posição inicial X base do pássaro em pixels
-    scoreColor: '#ff6200',  // Cor do score (laranja)
-    scoreFont: '24px Arial',// Fonte base do score
-    pauseMessageColor: '#fff', // Cor da mensagem "Press to Start!"
-    pauseMessageFont: '30px Arial' // Fonte da mensagem "Press to Start!"
+    baseWidth: 480,          // Largura base para proporção 9:16
+    baseHeight: 854,         // Altura base para proporção 9:16
+    birdWidth: 2.2,            // Largura do pássaro 2.2 (proporcional)
+    birdHeight: 2.2,           // Altura do pássaro 2.2(proporcional)
+    gravity: 1,              // Gravidade
+    lift: -1.15,                // Impulso para cima
+    obstacleWidth: 2.1,        // Largura dos obstáculos
+    obstacleSpeed: 1,        // Velocidade dos obstáculos
+    gap: 2,                  // Espaço entre obstáculos
+    obstacleFrequency: 1.4,    // Frequência de obstáculos (frames)
+    birdStartX: 30,           // Posição inicial X do pássaro
+    scoreColor: '#ff6200',   // Cor do score (laranja)
+    scoreFont: '2.3px Arial',  // Fonte base do score (ajustada por scaleFactor)
+    pauseMessageColor: '#fff', // Cor da mensagem "Press to Play"
+    pauseMessageFont: '1px Arial' // Fonte da mensagem "Press to Play"
 };
 
-// URLs das imagens na pasta img
+// URLs das imagens
 const birdImageUrl = '../img/bird.png';
 const pipeImageUrl = '../img/pipe.png';
 const backgroundImageUrl = '../img/background.png';
-const backgroundstartgameImageUrl = '../img/backgroungstartgame.png';
-const backgroundgameoverImageUrl = '../img/backgroundgameover.png';
+const startBackgroundUrl = '../img/backgroundstartgame.png';
+const gameOverBackgroundUrl = '../img/backgroundgameover.png';
 
-// Calcular fator de escala baseado na resolução da tela
-const scaleFactor = Math.min(window.innerWidth / 480, window.innerHeight / 640);
-canvas.style.width = `${480 * scaleFactor}px`;
-canvas.style.height = `${640 * scaleFactor}px`;
+// Criar canvas dinamicamente
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+document.body.appendChild(canvas);
 
-// Propriedades do pássaro ajustadas pela escala
-const bird = {
+// Ajustar canvas para proporção 9:16 independente da resolução
+function adjustCanvas() {
+    const aspectRatio = 9 / 16;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    if (width / height > aspectRatio) {
+        width = height * aspectRatio;
+    } else {
+        height = width / aspectRatio;
+    }
+    canvas.width = gameConfig.baseWidth;
+    canvas.height = gameConfig.baseHeight;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.style.position = 'absolute';
+    canvas.style.left = `${(window.innerWidth - width) / 2}px`;
+    canvas.style.top = `${(window.innerHeight - height) / 2}px`;
+}
+adjustCanvas();
+window.addEventListener('resize', adjustCanvas);
+
+// Fator de escala baseado na resolução base
+const scaleFactor = canvas.width / gameConfig.baseWidth;
+
+// Variáveis do jogo ajustadas por scaleFactor
+let bird = {
     x: gameConfig.birdStartX * scaleFactor,
-    y: (canvas.height / 2) * scaleFactor,
-    width: gameConfig.birdWidth * scaleFactor,
-    height: gameConfig.birdHeight * scaleFactor,
-    gravity: gameConfig.gravity,
-    lift: gameConfig.lift,
+    y: canvas.height / 2,
+    width: gameConfig.birdWidth * scaleFactor * 40,
+    height: gameConfig.birdHeight * scaleFactor * 40,
     velocity: 0,
 };
-
-// Variáveis do jogo
 let obstacles = [];
 let frame = 0;
 let gameStarted = false;
 let isPaused = false;
 let score = 0;
-let highScore = localStorage.getItem("highScore") || 0;
+let highScore = localStorage.getItem('highScore') || 0;
 let showPauseMessage = true;
-
-// Elementos da interface
-const startScreen = document.getElementById("startScreen");
-const startButton = document.getElementById("startButton");
-const highScoreDisplay = document.getElementById("highScore");
-const retryButton = document.getElementById("retryButton");
-const retry = document.getElementById("retry");
-const closeButton = document.getElementById("closeButton");
-const currentScoreDisplay = document.getElementById("currentScore");
-const gameOverHighScoreDisplay = document.getElementById("gameOverHighScore");
 
 // Carregar imagens
 const birdImage = new Image();
 const pipeImage = new Image();
 const backgroundImage = new Image();
+const startBackground = new Image();
+const gameOverBackground = new Image();
 birdImage.src = birdImageUrl;
 pipeImage.src = pipeImageUrl;
 backgroundImage.src = backgroundImageUrl;
+startBackground.src = startBackgroundUrl;
+gameOverBackground.src = gameOverBackgroundUrl;
 
-// Piscar mensagem "Press to Start!" a cada 500ms
-setInterval(() => {
-    if (isPaused) {
-        showPauseMessage = !showPauseMessage;
-    }
-}, 500);
+// Função para criar telas estilizadas e centralizadas
+function createScreen(id, background, elements) {
+    const screen = document.createElement('div');
+    screen.id = id;
+    screen.style.position = 'absolute';
+    screen.style.width = `${canvas.width * 0.75}px`; // 75% da largura do canvas
+    screen.style.height = `${canvas.height * 0.35}px`; // Proporção ajustada
+    screen.style.left = `${canvas.style.left}`; // Alinhado ao canvas
+    screen.style.top = `${parseFloat(canvas.style.top) + (canvas.height - canvas.height * 0.35) / 2}px`; // Centralizado verticalmente
+    screen.style.background = `url(${background}) no-repeat center center, rgba(0, 0, 0, 0.8)`;
+    screen.style.backgroundSize = 'cover';
+    screen.style.display = 'none';
+    screen.style.flexDirection = 'column';
+    screen.style.justifyContent = 'center';
+    screen.style.alignItems = 'center';
+    screen.style.color = '#fff';
+    screen.style.fontFamily = 'Arial';
+    screen.style.borderRadius = `${20 * scaleFactor}px`;
+    screen.style.boxShadow = `0 0 ${10 * scaleFactor}px rgba(255, 255, 255, 0.5)`;
+
+    elements.forEach(el => {
+        const element = document.createElement(el.tag);
+        element.textContent = el.text;
+        element.style.fontSize = `${el.fontSize * scaleFactor * 20}px`;
+        element.style.margin = `${10 * scaleFactor}px`;
+        if (el.id) element.id = el.id;
+        if (el.tag === 'button') {
+            element.style.padding = `${1 * scaleFactor}rem ${2 * scaleFactor}rem`;
+            element.style.border = 'none';
+            element.style.borderRadius = `${10 * scaleFactor}px`;
+            element.style.cursor = 'pointer';
+            element.style.backgroundColor = el.bgColor;
+            element.style.color = '#fff';
+            element.style.boxShadow = `0 ${5 * scaleFactor}px ${10 * scaleFactor}px rgba(0, 0, 0, 0.3)`;
+            element.style.transition = 'transform 0.2s';
+            element.addEventListener('mouseover', () => element.style.transform = `scale(1.05)`);
+            element.addEventListener('mouseout', () => element.style.transform = `scale(1)`);
+        }
+        screen.appendChild(element);
+    });
+    document.body.appendChild(screen);
+    return screen;
+}
+
+// Tela inicial
+const startScreen = createScreen('startScreen', startBackgroundUrl, [
+    { tag: 'h1', text: 'Phelp Bird', fontSize: 2.5 },
+    { tag: 'button', text: 'Start Game', fontSize: 1.2, id: 'startButton', bgColor: '#4CAF50' },
+    { tag: 'p', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'highScore' },
+]);
+startScreen.style.display = 'flex';
+
+// Tela de Game Over com botão X
+const gameOverScreen = createScreen('gameOverScreen', gameOverBackgroundUrl, [
+    { tag: 'h2', text: 'Game Over', fontSize: 2.5 },
+    { tag: 'p', text: 'Score: 0', fontSize: 1.2, id: 'currentScore' },
+    { tag: 'p', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'gameOverHighScore' },
+    { tag: 'button', text: 'Retry', fontSize: 1.2, id: 'retryButton', bgColor: '#f44336' },
+]);
+const closeButton = document.createElement('button');
+closeButton.textContent = 'X';
+closeButton.style.position = 'absolute';
+closeButton.style.top = `${5 * scaleFactor}px`;
+closeButton.style.left = `${5 * scaleFactor}px`;
+closeButton.style.width = `${30 * scaleFactor}px`;
+closeButton.style.height = `${30 * scaleFactor}px`;
+closeButton.style.backgroundColor = '#ff4444';
+closeButton.style.color = '#fff';
+closeButton.style.border = 'none';
+closeButton.style.borderRadius = '50%';
+closeButton.style.cursor = 'pointer';
+closeButton.style.fontSize = `${20 * scaleFactor}px`;
+closeButton.style.display = 'flex';
+closeButton.style.justifyContent = 'center';
+closeButton.style.alignItems = 'center';
+gameOverScreen.appendChild(closeButton);
 
 // Função para desenhar o fundo
 function drawBackground() {
@@ -86,9 +168,9 @@ function drawBird() {
     ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
 }
 
-// Função para atualizar a posição do pássaro
+// Função para atualizar o pássaro
 function updateBird() {
-    bird.velocity += bird.gravity;
+    bird.velocity += gameConfig.gravity * scaleFactor * 0.07;
     bird.y += bird.velocity;
 
     if (bird.y + bird.height > canvas.height || bird.y < 0) {
@@ -98,60 +180,49 @@ function updateBird() {
 
 // Função para criar obstáculos
 function createObstacles() {
-    if (frame % gameConfig.obstacleFrequency === 0) {
-        const height = Math.floor(Math.random() * (canvas.height - gameConfig.gap * scaleFactor));
+    if (frame % (gameConfig.obstacleFrequency * 300) === 0) {
+        const height = Math.floor(Math.random() * (canvas.height - gameConfig.gap * scaleFactor * 100));
         obstacles.push({
             x: canvas.width,
             y: 0,
-            width: gameConfig.obstacleWidth * scaleFactor,
+            width: gameConfig.obstacleWidth * scaleFactor * 50,
             height: height,
             passed: false
         });
     }
 }
 
-// Função para atualizar e desenhar os obstáculos
+// Função para atualizar e desenhar obstáculos
 function updateObstacles() {
     for (let i = 0; i < obstacles.length; i++) {
-        obstacles[i].x -= gameConfig.obstacleSpeed;
+        obstacles[i].x -= gameConfig.obstacleSpeed * scaleFactor * 1.5;
 
-        // Cano superior (girado 180 graus)
         ctx.save();
         ctx.translate(obstacles[i].x + obstacles[i].width / 2, obstacles[i].height / 2);
         ctx.rotate(Math.PI);
         ctx.drawImage(pipeImage, -obstacles[i].width / 2, -obstacles[i].height / 2, obstacles[i].width, obstacles[i].height);
         ctx.restore();
 
-        // Cano inferior (sem rotação)
-        ctx.drawImage(pipeImage, obstacles[i].x, obstacles[i].height + gameConfig.gap * scaleFactor, obstacles[i].width, canvas.height - obstacles[i].height - gameConfig.gap * scaleFactor);
+        ctx.drawImage(pipeImage, obstacles[i].x, obstacles[i].height + gameConfig.gap * scaleFactor * 100, obstacles[i].width, canvas.height - obstacles[i].height - gameConfig.gap * scaleFactor * 100);
     }
     obstacles = obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
 }
 
-// Função para verificar colisão considerando apenas pixels não transparentes
+// Função para verificar colisão
 function checkCollision() {
     for (let i = 0; i < obstacles.length; i++) {
         const obs = obstacles[i];
         const birdRect = { x: bird.x, y: bird.y, width: bird.width, height: bird.height };
         const pipeTopRect = { x: obs.x, y: obs.y, width: obs.width, height: obs.height };
-        const pipeBottomRect = { x: obs.x, y: obs.height + gameConfig.gap * scaleFactor, width: obs.width, height: canvas.height - obs.height - gameConfig.gap * scaleFactor };
+        const pipeBottomRect = { x: obs.x, y: obs.height + gameConfig.gap * scaleFactor * 100, width: obs.width, height: canvas.height - obs.height - gameConfig.gap * scaleFactor * 100 };
 
-        if (rectIntersect(birdRect, pipeTopRect)) {
-            if (pixelCollision(birdRect, pipeTopRect, birdImage, pipeImage)) {
-                return true;
-            }
-        }
-
-        if (rectIntersect(birdRect, pipeBottomRect)) {
-            if (pixelCollision(birdRect, pipeBottomRect, birdImage, pipeImage)) {
-                return true;
-            }
+        if (rectIntersect(birdRect, pipeTopRect) || rectIntersect(birdRect, pipeBottomRect)) {
+            return true;
         }
     }
     return false;
 }
 
-// Função auxiliar para verificar interseção de retângulos
 function rectIntersect(rect1, rect2) {
     return rect1.x < rect2.x + rect2.width &&
            rect1.x + rect1.width > rect2.x &&
@@ -159,67 +230,49 @@ function rectIntersect(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// Função para verificar colisão de pixels não transparentes
-function pixelCollision(rect1, rect2, img1, img2) {
-    const x1 = Math.max(rect1.x, rect2.x);
-    const y1 = Math.max(rect1.y, rect2.y);
-    const x2 = Math.min(rect1.x + rect1.width, rect2.x + rect2.width);
-    const y2 = Math.min(rect1.y + rect1.height, rect2.y + rect2.height);
-
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-
-    tempCtx.drawImage(img1, rect1.x, rect1.y, rect1.width, rect1.height);
-    const birdData = tempCtx.getImageData(x1, y1, x2 - x1, y2 - y1).data;
-
-    tempCtx.clearRect(0, 0, canvas.width, canvas.height);
-    tempCtx.drawImage(img2, rect2.x, rect2.y, rect2.width, rect2.height);
-    const pipeData = tempCtx.getImageData(x1, y1, x2 - x1, y2 - y1).data;
-
-    for (let i = 3; i < birdData.length; i += 4) {
-        if (birdData[i] > 0 && pipeData[i] > 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Função para verificar se o pássaro passou pelo obstáculo
+// Função para verificar passagem pelos obstáculos
 function checkPassObstacle() {
     for (let i = 0; i < obstacles.length; i++) {
         if (obstacles[i].x + obstacles[i].width < bird.x && !obstacles[i].passed) {
             obstacles[i].passed = true;
-            score++; // Incrementa o score ao passar pelo pipe
+            score++;
             return true;
         }
     }
     return false;
 }
 
-// Função para desenhar o score dentro do canvas
+// Função para desenhar o score
 function drawScore() {
-    ctx.font = `${parseInt(gameConfig.scoreFont) * scaleFactor}px Arial`;
+    ctx.font = `${parseInt(gameConfig.scoreFont) * scaleFactor * 24}px Arial`;
     ctx.fillStyle = gameConfig.scoreColor;
-    ctx.textAlign = "right";
-    ctx.fillText("Score: " + score, canvas.width - 10 * scaleFactor, 30 * scaleFactor);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Score: ${score}`, canvas.width - 10 * scaleFactor, 50 * scaleFactor);
 }
 
-// Função para desenhar a mensagem "Press to Start!" piscando
+// Função para desenhar a mensagem "Press to Play"
 function drawPauseMessage() {
     if (isPaused && showPauseMessage) {
-        ctx.font = `${parseInt(gameConfig.pauseMessageFont) * scaleFactor}px Arial`;
+        ctx.font = `${parseInt(gameConfig.pauseMessageFont) * scaleFactor * 30}px Arial`;
         ctx.fillStyle = gameConfig.pauseMessageColor;
-        ctx.textAlign = "center";
-        ctx.fillText("Press to Start!", canvas.width / 2, canvas.height / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('Press to Play!', canvas.width / 2, canvas.height / 2);
     }
 }
 
-// Função para atualizar o jogo
-function update() {
-    if (!gameStarted) return;
+// Piscar mensagem "Press to Play"
+setInterval(() => {
+    if (isPaused) showPauseMessage = !showPauseMessage;
+}, 500);
 
+// Função principal do jogo
+function update() {
+    if (!gameStarted) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpar canvas mesmo quando parado
+        return;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
     drawBird();
     updateObstacles();
@@ -231,28 +284,19 @@ function update() {
         frame++;
         updateBird();
         createObstacles();
-
-        checkPassObstacle(); // Score já incrementado aqui
-
+        checkPassObstacle();
         if (checkCollision()) {
             endGame();
         }
     }
-
     requestAnimationFrame(update);
 }
 
-// Função para reiniciar o jogo (com pausa inicial)
-function resetGame() {
-    bird.y = canvas.height / 2;
-    bird.velocity = 0;
-    obstacles = [];
-    frame = 0;
-    score = 0;
-    gameStarted = true;
-    isPaused = true;
-    retryButton.style.display = "none";
-    startScreen.style.display = "none";
+// Função para iniciar o jogo
+function startGame() {
+    startScreen.style.display = 'none';
+    resetGame();
+    update(); // Garantir que o loop comece
 }
 
 // Função para terminar o jogo
@@ -261,47 +305,50 @@ function endGame() {
     isPaused = false;
     if (score > highScore) {
         highScore = score;
-        localStorage.setItem("highScore", highScore);
+        localStorage.setItem('highScore', highScore);
     }
-    highScoreDisplay.textContent = highScore;
-    currentScoreDisplay.textContent = score;
-    gameOverHighScoreDisplay.textContent = highScore;
-    retryButton.style.display = "flex"; // Garantir que sempre apareça
+    document.getElementById('highScore').textContent = `Highest Score: ${highScore}`;
+    document.getElementById('currentScore').textContent = `Score: ${score}`;
+    document.getElementById('gameOverHighScore').textContent = `Highest Score: ${highScore}`;
+    gameOverScreen.style.display = 'flex';
+}
+
+// Função para reiniciar o jogo com "Press to Play"
+function resetGame() {
+    bird.y = canvas.height / 2;
+    bird.velocity = 0;
+    obstacles = [];
+    frame = 0;
+    score = 0;
+    gameStarted = true;
+    isPaused = true; // Sempre inicia pausado com "Press to Play"
+    gameOverScreen.style.display = 'none';
 }
 
 // Função para voltar à tela inicial
 function returnToStart() {
-    resetGame();
     gameStarted = false;
     isPaused = false;
-    startScreen.style.display = "flex";
+    gameOverScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
 }
 
-// Controles do jogo
-canvas.addEventListener("click", function () {
+// Eventos
+document.getElementById('startButton').addEventListener('click', startGame);
+document.getElementById('retryButton').addEventListener('click', () => {
+    resetGame();
+    update(); // Reiniciar o loop explicitamente
+});
+closeButton.addEventListener('click', returnToStart);
+canvas.addEventListener('click', () => {
     if (gameStarted) {
         if (isPaused) {
             isPaused = false;
         } else {
-            bird.velocity = bird.lift;
+            bird.velocity = gameConfig.lift * scaleFactor * 3;
         }
     }
 });
 
-startButton.addEventListener("click", function () {
-    startScreen.style.display = "none";
-    gameStarted = true;
-    isPaused = true;
-    update();
-});
-
-retry.addEventListener("click", function () {
-    resetGame();
-    update();
-});
-
-closeButton.addEventListener("click", returnToStart);
-
-// Inicia a tela inicial
-startScreen.style.display = "flex";
-highScoreDisplay.textContent = highScore;
+// Iniciar o loop para garantir que o canvas esteja limpo
+requestAnimationFrame(update);
