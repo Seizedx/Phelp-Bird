@@ -11,9 +11,9 @@ const gameConfig = {
     gap: 2,                  // Espaço entre obstáculos
     obstacleFrequency: 1,    // Frequência de obstáculos (frames)
     birdStartX: 30,           // Posição inicial X do pássaro
-    scoreColor: 'red',   // Cor do score (laranja)
+    scoreColor: '#ff6200',   // Cor do score (laranja)
     scoreFont: '2.3px DemonSker',  // Fonte base do score (ajustada por scaleFactor)
-    pauseMessageColor: 'red', // Cor da mensagem "Press to Play"
+    pauseMessageColor: '#fff', // Cor da mensagem "Press to Play"
     pauseMessageFont: '1px DemonSker' // Fonte da mensagem "Press to Play"
 };
 
@@ -134,22 +134,12 @@ function createScreen(id, background, elements) {
 
 // Tela inicial
 const startScreen = createScreen('startScreen', startBackgroundUrl, [
-    { tag: 'button', fontSize: 1.2, fontFamily: 'DemonSker', id: 'startButton', },
-    { tag: 'p', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'highScore', bgColor: 'orange' },
+    { tag: 'button', text: 'Start Game', fontSize: 1.2, fontFamily: 'DemonSker', id: 'startButton', bgColor: '#4CAF50', },
+    { tag: 'p', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'highScore' },
 ]);
 startScreen.style.display = 'flex';
 startScreen.style.justifyContent = 'flex-end';
 startScreen.style.alignItems = 'center';
-
-const startButton = document.getElementById('startButton');
-startButton.style.height = `100px`;
-startButton.style.width = `200px`;
-startButton.style.backgroundImage = `url(${startButtonUrl})`;
-startButton.style.backgroundSize = 'cover';
-startButton.style.display = 'flex';
-startButton.style.justifyContent = 'center';
-startButton.style.alignItems = 'center';
-startButton.style.marginBottom = '2em';
 
 
 // Tela de Game Over com botão X
@@ -229,50 +219,24 @@ function updateObstacles() {
 
 // Função para verificar colisão
 function checkCollision() {
-    // Definir o círculo do pássaro
-    const birdRadius = bird.width / 2; // Ou ajuste para um valor fixo, como 20
-    const birdCircle = {
-        x: bird.x + bird.width / 2,  // Centro x do pássaro
-        y: bird.y + bird.height / 2, // Centro y do pássaro
-        radius: birdRadius           // Raio do círculo
-    };
-
     for (let i = 0; i < obstacles.length; i++) {
         const obs = obstacles[i];
-        const pipeTopRect = { 
-            x: obs.x, 
-            y: obs.y, 
-            width: obs.width, 
-            height: obs.height 
-        };
-        const pipeBottomRect = { 
-            x: obs.x, 
-            y: obs.height + gameConfig.gap * scaleFactor * 100, 
-            width: obs.width, 
-            height: canvas.height - obs.height - gameConfig.gap * scaleFactor * 100 
-        };
+        const birdRect = { x: bird.x, y: bird.y, width: bird.width, height: bird.height };
+        const pipeTopRect = { x: obs.x, y: obs.y, width: obs.width, height: obs.height };
+        const pipeBottomRect = { x: obs.x, y: obs.height + gameConfig.gap * scaleFactor * 100, width: obs.width, height: canvas.height - obs.height - gameConfig.gap * scaleFactor * 100 };
 
-        // Verificar colisão entre o círculo do pássaro e os retângulos dos canos
-        if (circleRectIntersect(birdCircle, pipeTopRect) || circleRectIntersect(birdCircle, pipeBottomRect)) {
+        if (rectIntersect(birdRect, pipeTopRect) || rectIntersect(birdRect, pipeBottomRect)) {
             return true;
         }
     }
     return false;
 }
 
-// Função para verificar interseção entre um círculo e um retângulo
-function circleRectIntersect(circle, rect) {
-    // Encontrar o ponto mais próximo no retângulo ao centro do círculo
-    const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
-    const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
-
-    // Calcular a distância entre o centro do círculo e o ponto mais próximo
-    const distanceX = circle.x - closestX;
-    const distanceY = circle.y - closestY;
-    const distanceSquared = distanceX * distanceX + distanceY * distanceY;
-
-    // Se a distância for menor que o raio ao quadrado, há interseção
-    return distanceSquared <= (circle.radius * circle.radius);
+function rectIntersect(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
 }
 
 // Função para verificar passagem pelos obstáculos
@@ -286,6 +250,7 @@ function checkPassObstacle() {
     }
     return false;
 }
+
 // Função para desenhar o score
 function drawScore() {
     ctx.font = `${parseInt(gameConfig.scoreFont) * scaleFactor * 24}px DemonSker`;

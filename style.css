@@ -1,3 +1,7 @@
+@font-face {
+    font-family: 'DemonSker';
+    src: url('../font/DemonSker.ttf') format('truetype');
+}
 body {
     margin: 0;
     padding: 0;
@@ -5,4 +9,5 @@ body {
     width: 100vw;
     background: #000;
     overflow: hidden;
+    font-family: 'DemonSker';
 }
