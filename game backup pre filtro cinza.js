@@ -34,7 +34,6 @@ const retryButtonUrl = '../img/retrybutton.png';
 const closeButtonUrl = '../img/closebutton.png';
 const gameOverImageUrl = '../img/gameover.png';
 
-
 // Criar canvas dinamicamente
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -95,47 +94,16 @@ backgroundImage.src = backgroundImageUrl;
 startBackground.src = startBackgroundUrl;
 gameOverBackground.src = gameOverBackgroundUrl;
 
-// Função para atualizar as dimensões e posição da tela
-function updateScreenDimensions(screen) {
-    const aspectRatio = 9 / 16;
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    
-    if (width / height > aspectRatio) {
-        width = height * aspectRatio;
-    } else {
-        height = width / aspectRatio;
-    }
-    
-    screen.style.width = `${width}px`;
-    screen.style.height = `${height}px`;
-    screen.style.left = `${(window.innerWidth - width) / 2}px`;
-    screen.style.top = `${(window.innerHeight - height) / 2}px`;
-}
-
 // Função para criar telas estilizadas e centralizadas
 function createScreen(id, background, elements) {
     const screen = document.createElement('div');
-    const aspectRatio = 9 / 16;
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    
-    // Definir proporções iniciais
-    if (width / height > aspectRatio) {
-        width = height * aspectRatio;
-    } else {
-        height = width / aspectRatio;
-    }
-
-    // Estilos iniciais
-    screen.width = gameConfig.baseWidth;
-    screen.height = gameConfig.baseHeight;
-    screen.style.width = `${width}px`;
-    screen.style.height = `${height}px`;
-    screen.style.position = 'absolute';
-    screen.style.left = `${(window.innerWidth - width) / 2}px`;
-    screen.style.top = `${(window.innerHeight - height) / 2}px`;
     screen.id = id;
+    screen.style.display = 'flex';
+    screen.style.flexDirection = 'row';
+    screen.style.justifyContent = 'center';
+    screen.style.alignItems = 'center';
+    screen.style.width = '100%';
+    screen.style.height = '100%';
     screen.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
     screen.style.backdropFilter = 'blur(5px)';
     screen.style.background = `url(${background}) no-repeat center center, rgba(0, 0, 0, 0.8)`;
@@ -146,15 +114,15 @@ function createScreen(id, background, elements) {
     screen.style.alignItems = 'center';
     screen.style.color = '#fff';
     screen.style.fontFamily = 'DemonSker';
+    screen.style.borderRadius = `${20 * scaleFactor}px`;
+    screen.style.boxShadow = `0 0 ${10 * scaleFactor}px rgba(255, 255, 255, 0.5)`;
 
-    // Adicionar elementos
     elements.forEach(el => {
         const element = document.createElement(el.tag);
         element.textContent = el.text;
         element.style.fontSize = `${el.fontSize * scaleFactor * 20}px`;
         element.style.margin = `${10 * scaleFactor}px`;
         if (el.id) element.id = el.id;
-        
         if (el.tag === 'button') {
             element.style.padding = `${1 * scaleFactor}rem ${2 * scaleFactor}rem`;
             element.style.border = 'none';
@@ -167,7 +135,7 @@ function createScreen(id, background, elements) {
             element.addEventListener('mouseover', () => element.style.transform = `scale(1.35)`);
             element.addEventListener('mouseout', () => element.style.transform = `scale(1)`);
         }
-        
+        if (el.id) element.id = el.id;
         if (el.tag === 'highestScore') {
             element.style.overflow = 'visible';
             element.style.marginBottom = gameConfig.startScreenMarginBottom;
@@ -175,20 +143,11 @@ function createScreen(id, background, elements) {
             element.style.fontFamily = gameConfig.highestScoreFont;
             element.style.fontSize = gameConfig.highestScoreFontSize;
         }
-        
         screen.appendChild(element);
     });
-
-    // Adicionar ao DOM
     document.body.appendChild(screen);
-
-    // Adicionar listener para redimensionamento
-    window.addEventListener('resize', () => updateScreenDimensions(screen));
-
-    // Retornar a tela criada
     return screen;
 }
-
 
 // Tela inicial
 const startScreen = createScreen('startScreen', startBackgroundUrl, [
