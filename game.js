@@ -1,4 +1,3 @@
-// Configurações base do jogo (valores inteiros baseados em 1)
 const gameConfig = {
     baseWidth: 480,                           // Largura base para proporção 9:16
     baseHeight: 853,                          // Altura base para proporção 9:16
@@ -20,33 +19,62 @@ const gameConfig = {
     obstacleFrequency: 0.92,                  // Frequência de obstáculos (frames)
     birdStartX: 100,                          // Posição inicial X do pássaro
     birdStartY: 280,                          // Posição inicial Y do pássaro
-    backgroundSpeed: 0.1,                     // Pixels de deslocamento do background por frame
-    groundSpeed: 1.499,                       // Pixels de deslocamento do chão por frame
-    startScreenSpacer: 30,                    // Espaçador dos elementos do bottom (startScreen)
+    backgroundSpeed: 0.1,                     // Pixels de deslocamento do background
+    groundSpeed: 1.499,                       // Pixels de deslocamento do chão
+    startScreenSpacer: 30,                    // Espaçador do do bottom (startScreen)
     highestScoreColor: 'red',                 // Cor do Highest Score (startScreen)
     highestScoreFont: '2.3px DemonSker',      // Fonte base do Highest Score
     highestScoreFontSize: '40px',             // Fonte base do Highest Score (startScreen)
     scoreColor: 'red',                        // Cor do score (canvas)
-    scoreFont: '2.3px DemonSker',             // Fonte base do score (ajustada por scaleFactor)
+    scoreFont: '2.3px DemonSker',             // Fonte base do score (scaleFactor)
     pauseMessageColor: 'red',                 // Cor da mensagem "Press to Play!" (canvas)
-    pauseMessageFont: '1px DemonSker'         // Fonte da mensagem "Press to Play!" (canvas)
+    pauseMessageFont: '1px DemonSker'         // Fonte "Press to Play!" (canvas)
 };
 
-// URLs das imagens
-const birdImageUrl = '../img/bird.png';
-const pipeTopImageUrl = '../img/pipetop.png';  
-const pipeImageUrl = '../img/pipe.png';        
-const groundImageUrl = '../img/ground.png';
-const backgroundImageUrl = '../img/background.png';
+// Images
 const startBackgroundUrl = '../img/backgroundstartgame.png';
 const gameOverBackgroundUrl = '../img/backgroundgameover.png';
 const startButtonUrl = '../img/startbutton.png';
 const retryButtonUrl = '../img/retrybutton.png';
 const closeButtonUrl = '../img/closebutton.png';
 const gameOverImageUrl = '../img/gameover.png';
+const themeImageUrl = '../img/theme.png';
+const theme1ImageUrl = '../img/theme1.png';
+const theme2ImageUrl = '../img/theme2.png';
 
+// SFX
+const startSound = new Audio('../sfx/start.wav');
+const hitSound = new Audio('../sfx/hit.wav');
+const wingSound = new Audio('../sfx/wing.wav');
+const pointSound = new Audio('../sfx/point.wav');
+const wastedSound = new Audio('../sfx/wasted.wav');
 
-// Criar canvas dinamicamente
+// Themes
+const themes = {
+    theme1: {
+        birdImageUrl: '../img/bird.png',
+        pipeTopImageUrl: '../img/pipetop.png',
+        pipeImageUrl: '../img/pipe.png',
+        groundImageUrl: '../img/ground.png',
+        backgroundImageUrl: '../img/background.png'
+    },
+    theme2: {
+        birdImageUrl: '../img/bird1.png',
+        pipeTopImageUrl: '../img/pipetop1.png',
+        pipeImageUrl: '../img/pipe1.png',
+        groundImageUrl: '../img/ground1.png',
+        backgroundImageUrl: '../img/background1.png'
+    },
+    theme3: {
+        birdImageUrl: '../img/bird2.png',
+        pipeTopImageUrl: '../img/pipetop2.png',
+        pipeImageUrl: '../img/pipe2.png',
+        groundImageUrl: '../img/ground2.png',
+        backgroundImageUrl: '../img/background2.png'
+    }
+};
+
+// Canvas
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
@@ -72,10 +100,7 @@ function adjustCanvas() {
 adjustCanvas();
 window.addEventListener('resize', adjustCanvas);
 
-// Fator de escala baseado na resolução base
 const scaleFactor = canvas.width / gameConfig.baseWidth;
-
-// Variáveis do jogo ajustadas por scaleFactor
 let bird = {
     x: gameConfig.birdStartX * scaleFactor,
     y: gameConfig.birdStartY * scaleFactor,
@@ -93,7 +118,7 @@ let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let showPauseMessage = true;
 
-// Carregar imagens
+// load
 const birdImage = new Image();
 const pipeTopImage = new Image();
 const pipeImage = new Image();
@@ -101,15 +126,20 @@ const groundImage = new Image();
 const backgroundImage = new Image();
 const startBackground = new Image();
 const gameOverBackground = new Image();
-birdImage.src = birdImageUrl;
-pipeTopImage.src = pipeTopImageUrl;
-pipeImage.src = pipeImageUrl;
-groundImage.src = groundImageUrl;
-backgroundImage.src = backgroundImageUrl;
+let currentTheme = 'theme1'; // Tema padrão
+
+function loadTheme(themeName) {
+    currentTheme = themeName;
+    birdImage.src = themes[themeName].birdImageUrl;
+    pipeTopImage.src = themes[themeName].pipeTopImageUrl;
+    pipeImage.src = themes[themeName].pipeImageUrl;
+    groundImage.src = themes[themeName].groundImageUrl;
+    backgroundImage.src = themes[themeName].backgroundImageUrl;
+}
+loadTheme(currentTheme); // Carrega o tema inicial
 startBackground.src = startBackgroundUrl;
 gameOverBackground.src = gameOverBackgroundUrl;
 
-// Função para atualizar as dimensões e posição da tela
 function updateScreenDimensions(screen) {
     const aspectRatio = 9 / 16;
     let width = window.innerWidth;
@@ -125,20 +155,16 @@ function updateScreenDimensions(screen) {
     screen.style.top = `${(window.innerHeight - height) / 2}px`;
 }
 
-// Função para criar telas estilizadas e centralizadas
 function createScreen(id, background, elements) {
     const screen = document.createElement('div');
     const aspectRatio = 9 / 16;
     let width = window.innerWidth;
     let height = window.innerHeight;
-    // Definir proporções iniciais
     if (width / height > aspectRatio) {
         width = height * aspectRatio;
     } else {
         height = width / aspectRatio;
     }
-
-    // Estilos iniciais
     screen.width = gameConfig.baseWidth;
     screen.height = gameConfig.baseHeight;
     screen.style.width = `${width}px`;
@@ -158,7 +184,6 @@ function createScreen(id, background, elements) {
     screen.style.color = '#fff';
     screen.style.fontFamily = 'DemonSker';
 
-    // Adicionar elementos
     elements.forEach(el => {
         const element = document.createElement(el.tag);
         if (el.tag === 'img') {
@@ -210,10 +235,8 @@ function createScreen(id, background, elements) {
         screen.appendChild(element);
     });
 
-    // Adicionar ao DOM
     document.body.appendChild(screen);
 
-    // Função para atualizar os elementos internos ao redimensionar
     function updateScreenElements() {
         const newWidth = window.innerWidth;
         const newHeight = window.innerHeight;
@@ -243,9 +266,9 @@ function createScreen(id, background, elements) {
                 element.style.width = `${frameWidth}px`;
                 element.style.height = `${frameHeight}px`;
                 element.style.backgroundSize = `${frameWidth * totalFrames}px ${frameHeight}px`;
-                const currentFrame = parseInt(element.dataset.currentFrame) || 0; // Usar frame armazenado
-                element.style.backgroundPosition = `-${currentFrame * frameWidth}px 0px`; // Ajustar posição
-                element.dataset.frameWidth = frameWidth; // Atualizar frameWidth
+                const currentFrame = parseInt(element.dataset.currentFrame) || 0;
+                element.style.backgroundPosition = `-${currentFrame * frameWidth}px 0px`;
+                element.dataset.frameWidth = frameWidth;
             } else {
                 element.style.fontSize = `${el.fontSize * newScaleFactor * 20}px`;
             }
@@ -255,7 +278,7 @@ function createScreen(id, background, elements) {
                 element.style.borderRadius = `${10 * newScaleFactor}px`;
                 element.style.boxShadow = `0 ${5 * newScaleFactor}px ${10 * newScaleFactor}px rgba(0, 0, 0, 0.3)`;
                 if (el.id === 'startButton') {
-                    updateStartButtonSize(newScaleFactor); // Atualizar tamanho do startButton
+                    updateStartButtonSize(newScaleFactor);
                 }
             }
             if (el.tag === 'highestScore') {
@@ -265,14 +288,11 @@ function createScreen(id, background, elements) {
         });
     }
 
-    // Adicionar listener para redimensionamento
     window.addEventListener('resize', updateScreenElements);
 
-    // Retornar a tela criada
     return screen;
 }
 
-// Função para calcular o scaleFactor baseado no tamanho atual da janela
 function calculateScaleFactor() {
     const aspectRatio = 9 / 16;
     let width = window.innerWidth;
@@ -285,24 +305,90 @@ function calculateScaleFactor() {
     return width / gameConfig.baseWidth;
 }
 
-// Tela inicial
+// startScreen
 const startScreen = createScreen('startScreen', startBackgroundUrl, [
     { tag: 'button', fontSize: 1.2, fontFamily: 'DemonSker', id: 'startButton', },
     { tag: 'highestScore', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'highScore', },
-    { tag: 'div', id: 'bottomSpacer' }, // Novo elemento spacer
+    { tag: 'div', id: 'bottomSpacer' },
 ]);
 startScreen.style.display = 'flex';
-startScreen.style.flexDirection = 'column'; // Alterado para column para melhor controle vertical
+startScreen.style.flexDirection = 'column';
 startScreen.style.justifyContent = 'flex-end';
 startScreen.style.alignItems = 'center';
 
-// Função para atualizar todas as telas e seus elementos
+// settingsButton
+const settingsButton = document.createElement('button');
+settingsButton.textContent = '⚙️';
+settingsButton.style.position = 'absolute';
+settingsButton.style.top = `${10 * scaleFactor}px`;
+settingsButton.style.right = `${20 * scaleFactor}px`;
+settingsButton.style.width = `${50 * scaleFactor}px`;
+settingsButton.style.height = `${50 * scaleFactor}px`;
+settingsButton.style.border = 'none';
+settingsButton.style.backgroundColor = 'transparent';
+settingsButton.style.borderRadius = '50%';
+settingsButton.style.fontSize = `${100 * scaleFactor}px`;
+settingsButton.style.transition = 'transform 1s';
+settingsButton.style.textShadow = '0 0 10px #ff0000, 0 0 1px #ff0000';
+startScreen.appendChild(settingsButton);
+
+settingsButton.addEventListener('mouseover', () => settingsButton.style.transform = `scale(1.35)`);
+settingsButton.addEventListener('mouseout', () => settingsButton.style.transform = `scale(1)`);
+
+// Tela de configurações
+const settingsScreen = createScreen('settingsScreen', startBackgroundUrl, [
+    { tag: 'img', src: themeImageUrl, fontSize: 1.5, id: 'theme1Button' },
+    { tag: 'img', src: theme1ImageUrl, fontSize: 1.5, id: 'theme2Button' },
+    { tag: 'img', src: theme2ImageUrl, fontSize: 1.5, id: 'theme3Button' }
+]);
+settingsScreen.style.background = 'rgba(0, 0, 0, 0.8)';
+settingsScreen.style.display = 'none';
+
+
+const settingsCloseButton = document.createElement('button');
+settingsCloseButton.textContent = 'X';
+settingsCloseButton.style.position = 'absolute';
+settingsCloseButton.style.top = `${5 * scaleFactor}px`;
+settingsCloseButton.style.left = `${5 * scaleFactor}px`;
+
+settingsCloseButton.style.backgroundColor = '#ff4444';
+settingsCloseButton.style.color = '#fff';
+settingsCloseButton.style.border = 'none';
+settingsCloseButton.style.borderRadius = '50%';
+settingsCloseButton.style.cursor = 'pointer';
+settingsCloseButton.style.fontSize = `${20 * scaleFactor}px`;
+settingsScreen.appendChild(settingsCloseButton);
+
+document.getElementById('theme1Button').addEventListener('click', () => {
+    loadTheme('theme1');
+    settingsScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+});
+document.getElementById('theme2Button').addEventListener('click', () => {
+    loadTheme('theme2');
+    settingsScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+});
+document.getElementById('theme3Button').addEventListener('click', () => {
+    loadTheme('theme3');
+    settingsScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+});
+
+settingsButton.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    settingsScreen.style.display = 'flex';
+});
+settingsCloseButton.addEventListener('click', () => {
+    settingsScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+});
+
 function updateAllScreens() {
     const currentScaleFactor = calculateScaleFactor();
-    const screens = [startScreen, gameOverScreen];
+    const screens = [startScreen, gameOverScreen, settingsScreen];
 
     screens.forEach(screen => {
-        // Acessar os elementos filhos diretamente
         const elements = screen.children;
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
@@ -323,14 +409,14 @@ function updateAllScreens() {
                 element.style.fontSize = `${baseFontSize * currentScaleFactor * 20}px`;
             } else if (element.id === 'highScore') {
                 element.style.fontSize = `${parseInt(gameConfig.highestScoreFontSize) * currentScaleFactor}px`;
-                // marginBottom removido, substituído pelo spacer
             } else if (element.id === 'bottomSpacer') {
-                element.style.height = `${gameConfig.startScreenSpacer * currentScaleFactor}px`; // Espaçamento proporcional
+                element.style.height = `${gameConfig.startScreenSpacer * currentScaleFactor}px`;
+            } else if (element.id === 'theme1Button' || element.id === 'theme2Button' || element.id === 'theme3Button') {
+                element.style.width = `${1.5 * currentScaleFactor * 50}px`;
+                element.style.height = 'auto';
             }
             element.style.margin = `${10 * currentScaleFactor}px`;
         }
-
-        // Ajustar o tamanho da própria tela
         const aspectRatio = 9 / 16;
         let width = window.innerWidth;
         let height = window.innerHeight;
@@ -345,15 +431,23 @@ function updateAllScreens() {
         screen.style.top = `${(window.innerHeight - height) / 2}px`;
     });
 
-    // Ajustar o closeButton
+    // closeButton and settingsButton
     closeButton.style.top = `${5 * currentScaleFactor}px`;
     closeButton.style.left = `${5 * currentScaleFactor}px`;
-    closeButton.style.width = `${30 * currentScaleFactor}px`;
-    closeButton.style.height = `${30 * currentScaleFactor}px`;
-    closeButton.style.fontSize = `${20 * currentScaleFactor}px`;
+    closeButton.style.width = `${50 * currentScaleFactor}px`;
+    closeButton.style.height = `${50 * currentScaleFactor}px`;
+    closeButton.style.fontSize = `${40 * currentScaleFactor}px`;
+    settingsButton.style.width = `${70 * currentScaleFactor}px`;
+    settingsButton.style.height = `${70 * currentScaleFactor}px`;
+    settingsButton.style.fontSize = `${60 * currentScaleFactor}px`;
+    settingsCloseButton.style.top = `${5 * currentScaleFactor}px`;
+    settingsCloseButton.style.left = `${5 * currentScaleFactor}px`;
+    settingsCloseButton.style.width = `${50 * currentScaleFactor}px`;
+    settingsCloseButton.style.height = `${50 * currentScaleFactor}px`;
+    settingsCloseButton.style.fontSize = `${40 * currentScaleFactor}px`;
 }
 
-// Configuração do botão de início
+// startButton
 const startButton = document.getElementById('startButton');
 let frameWidthstartButton = 200 * scaleFactor;
 let frameHeightstartButton = 100 * scaleFactor;
@@ -376,7 +470,7 @@ startButton.style.boxShadow = 'none';
 
 // Tela de Game Over com botão X
 const gameOverScreen = createScreen('gameOverScreen', gameOverBackgroundUrl, [
-    { tag: 'div', id: 'gameOverSprite', fontSize: 2.5 }, // Substituído por um div para animação
+    { tag: 'div', id: 'gameOverSprite', fontSize: 2.5 },
     { tag: 'p', text: 'Score: 0', fontSize: 1.2, id: 'currentScore' },
     { tag: 'p', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'gameOverHighScore' },
     { tag: 'button', text: 'Retry', fontSize: 1.2, id: 'retryButton', bgColor: '#f44336' },
@@ -394,10 +488,9 @@ closeButton.style.justifyContent = 'center';
 closeButton.style.alignItems = 'center';
 gameOverScreen.appendChild(closeButton);
 
-// Aplicar tamanhos iniciais e atualizar após a criação
 updateAllScreens();
 
-// Configuração da animação do startButton
+// startButton animation
 function animateSpritestartButton() {
     startButton.style.backgroundPosition = `-${currentFramestartButton * frameWidthstartButton}px 0px`;
     currentFramestartButton = (currentFramestartButton + 1) % totalFramesstartButton;
@@ -405,140 +498,125 @@ function animateSpritestartButton() {
 
 const intervalstartButton = setInterval(animateSpritestartButton, 1000 / 10);
 
-// Garantir atualização no carregamento, recarregamento e redimensionamento
 window.addEventListener('load', updateAllScreens);
 window.addEventListener('resize', updateAllScreens);
 
-// Função para desenhar o chão com movimento
 function drawGround() {
-    const groundHeight = canvas.height * 0.25; // 25% da altura do canvas
-    groundX = groundX % canvas.width; // Calcula a posição com módulo para um loop contínuo
-    // Desenha duas instâncias da imagem com sobreposição de 1 pixel
+    const groundHeight = canvas.height * 0.25;
+    groundX = groundX % canvas.width;
     ctx.drawImage(groundImage, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
     ctx.drawImage(groundImage, groundX + canvas.width - 1, canvas.height - groundHeight, canvas.width, groundHeight);
 }
-
-// Variável para rastrear a posição do background
 let backgroundX = 0;
 let groundX = 0;
-// Função para desenhar o fundo
+
 function drawBackground() {
-    // Calcula a posição com módulo para um loop contínuo
     backgroundX = backgroundX % canvas.width;
-    // Desenha duas instâncias da imagem com sobreposição de 2 pixels
     ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
     ctx.drawImage(backgroundImage, backgroundX + canvas.width - 1, 0, canvas.width, canvas.height);
 }
 
-// Função para desenhar o pássaro
 function drawBird() {
-    ctx.save(); // Salva o estado do canvas
-    ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2); // Move o ponto de rotação para o centro do pássaro
-    ctx.rotate(bird.rotation); // Aplica a rotação
-    ctx.drawImage(birdImage, -bird.width / 2, -bird.height / 2, bird.width, bird.height); // Desenha com o centro ajustado
-    ctx.restore(); // Restaura o estado do canvas
+    ctx.save();
+    ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
+    ctx.rotate(bird.rotation);
+    ctx.drawImage(birdImage, -bird.width / 2, -bird.height / 2, bird.width, bird.height);
+    ctx.restore();
 }
 
-// Função para atualizar o pássaro
 function updateBird() {
     bird.velocity += gameConfig.gravity * scaleFactor * gameConfig.gravityScale;
     bird.y += bird.velocity;
-
-    // Ajustar rotação com base na velocidade
     if (bird.velocity < 0) {
-        bird.rotation = Math.max(bird.rotation - gameConfig.birdRotationUpSpeed, gameConfig.birdRotationUp); // -30 graus
+        bird.rotation = Math.max(bird.rotation - gameConfig.birdRotationUpSpeed, gameConfig.birdRotationUp);
     } else {
-        bird.rotation = Math.min(bird.rotation + gameConfig.birdRotationDownSpeed, gameConfig.birdRotationDown); // 90 graus
+        bird.rotation = Math.min(bird.rotation + gameConfig.birdRotationDownSpeed, gameConfig.birdRotationDown);
     }
-
-    const groundHeight = canvas.height * 0.25; // 25% da altura do canvas
+    const groundHeight = canvas.height * 0.25;
     const groundY = canvas.height - groundHeight; 
     if (bird.y + bird.height > groundY || bird.y < 0) {
         endGame();
     }
 }
 
-// Movimento bird ao pressionar
+// Press movement
 canvas.addEventListener('click', () => {
     if (gameStarted) {
         if (isPaused) {
             isPaused = false;
+            wingSound.pause();
+            wingSound.currentTime = 0;
+            wingSound.play();
         } else {
+            wingSound.pause();
+            wingSound.currentTime = 0;
+            wingSound.play();
             bird.velocity = gameConfig.lift * scaleFactor * gameConfig.liftScale;
-            bird.rotation = gameConfig.birdRotationUp; // -30 graus
+            bird.rotation = gameConfig.birdRotationUp;
         }
     }
 });
 
-// Função para criar obstáculos
 function createObstacles() {
     if (frame % (gameConfig.obstacleFrequency * 300) === 0) {
-        const groundHeight = canvas.height * 0.25; // 25% da altura do canvas
-        const playableHeight = canvas.height - groundHeight - (gameConfig.gap * scaleFactor * 100); // Altura jogável (75% - gap)
-        const height = Math.floor(Math.random() * playableHeight); // Limitado ao espaço acima do chão
+        const groundHeight = canvas.height * 0.25;
+        const playableHeight = canvas.height - groundHeight - (gameConfig.gap * scaleFactor * 100);
+        const height = Math.floor(Math.random() * playableHeight);
         obstacles.push({
             x: canvas.width,
             y: 0,
-            width: gameConfig.pipeWidth * scaleFactor * 50, // Usando pipeWidth
+            width: gameConfig.pipeWidth * scaleFactor * 50,
             height: height,
             passed: false
         });
     }
 }
-// Função para atualizar e desenhar obstáculos
+
 function updateObstacles() {
     const pipeTopHeight = gameConfig.pipeTopHeight;
-    const offsetX = (gameConfig.pipeTopWidth - gameConfig.pipeWidth) * scaleFactor * 50 / 2; // Deslocamento horizontal
+    const offsetX = (gameConfig.pipeTopWidth - gameConfig.pipeWidth) * scaleFactor * 50 / 2;
 
     for (let i = 0; i < obstacles.length; i++) {
         obstacles[i].x -= gameConfig.obstacleSpeed * scaleFactor * 1.5;
-        
-        // Cano superior (invertido)
         ctx.save();
         ctx.translate(obstacles[i].x + gameConfig.pipeTopWidth * scaleFactor * 50 / 2, obstacles[i].height);
         ctx.rotate(Math.PI);
-        // Desenhar o topo (pipetop.png) com altura fixa
         ctx.drawImage(
             pipeTopImage,
-            -gameConfig.pipeTopWidth * scaleFactor * 50 / 2, // Posição X
-            0, // Posição Y
-            gameConfig.pipeTopWidth * scaleFactor * 50, // Largura
-            pipeTopHeight // Altura
+            -gameConfig.pipeTopWidth * scaleFactor * 50 / 2,
+            0,
+            gameConfig.pipeTopWidth * scaleFactor * 50,
+            pipeTopHeight
         );
-        // Desenhar a base (pipe.png) abaixo do topo, preenchendo o restante da altura
         if (obstacles[i].height > pipeTopHeight) {
             ctx.drawImage(
                 pipeImage,
-                -gameConfig.pipeWidth * scaleFactor * 50 / 2, // Posição X (sem offset, pois a rotação já centraliza)
-                pipeTopHeight, // Posição Y
-                gameConfig.pipeWidth * scaleFactor * 50, // Largura
-                obstacles[i].height - pipeTopHeight // Altura
+                -gameConfig.pipeWidth * scaleFactor * 50 / 2,
+                pipeTopHeight,
+                gameConfig.pipeWidth * scaleFactor * 50,
+                obstacles[i].height - pipeTopHeight
             );
         }
         ctx.restore();
-
-        // Cano inferior
-        const groundHeight = canvas.height * 0.25; // 25% da altura do canvas
+        const groundHeight = canvas.height * 0.25;
         const groundY = canvas.height - groundHeight; 
         const bottomPipeY = obstacles[i].height + gameConfig.gap * scaleFactor * 100; 
         const bottomPipeHeight = groundY - bottomPipeY; 
         if (bottomPipeHeight > 0) {
-            // Desenhar o topo do cano inferior
             ctx.drawImage(
                 pipeTopImage,
-                obstacles[i].x, // Posição X
-                bottomPipeY, // Posição Y
-                gameConfig.pipeTopWidth * scaleFactor * 50, // Largura
-                pipeTopHeight // Altura
+                obstacles[i].x,
+                bottomPipeY,
+                gameConfig.pipeTopWidth * scaleFactor * 50,
+                pipeTopHeight
             );
-            // Desenhar o corpo do cano inferior
             if (bottomPipeHeight > pipeTopHeight) {
                 ctx.drawImage(
                     pipeImage,
-                    obstacles[i].x + offsetX, // Aplicar deslocamento
-                    bottomPipeY + pipeTopHeight, // Posição Y
-                    gameConfig.pipeWidth * scaleFactor * 50, // Largura
-                    bottomPipeHeight - pipeTopHeight // Altura
+                    obstacles[i].x + offsetX,
+                    bottomPipeY + pipeTopHeight,
+                    gameConfig.pipeWidth * scaleFactor * 50,
+                    bottomPipeHeight - pipeTopHeight
                 );
             }
         }
@@ -546,7 +624,6 @@ function updateObstacles() {
     obstacles = obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
 }
 
-// Função para verificar colisão
 function checkCollision() {
     const birdRadius = bird.width / 2;
     const birdCircle = {
@@ -568,8 +645,6 @@ function checkCollision() {
             width: obs.width, 
             height: canvas.height - obs.height - gameConfig.gap * scaleFactor * 100 
         };
-
-        // Verificar colisão entre o círculo do pássaro e os retângulos dos canos
         if (circleRectIntersect(birdCircle, pipeTopRect) || circleRectIntersect(birdCircle, pipeBottomRect)) {
             return true;
         }
@@ -577,33 +652,29 @@ function checkCollision() {
     return false;
 }
 
-// Função para verificar interseção entre um círculo e um retângulo
 function circleRectIntersect(circle, rect) {
-    // Encontrar o ponto mais próximo no retângulo ao centro do círculo
     const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
     const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
-
-    // Calcular a distância entre o centro do círculo e o ponto mais próximo
     const distanceX = circle.x - closestX;
     const distanceY = circle.y - closestY;
     const distanceSquared = distanceX * distanceX + distanceY * distanceY;
-
-    // Se a distância for menor que o raio ao quadrado, há interseção
     return distanceSquared <= (circle.radius * circle.radius);
 }
 
-// Função para verificar passagem pelos obstáculos
 function checkPassObstacle() {
     for (let i = 0; i < obstacles.length; i++) {
-        if (obstacles[i].x + obstacles[i].width < bird.x && !obstacles[i].passed) {
+
+        let birdCenter = bird.x + (bird.width / 2);
+        if (birdCenter > obstacles[i].x + obstacles[i].width && !obstacles[i].passed) {
             obstacles[i].passed = true;
             score++;
+            pointSound.play(); 
             return true;
         }
     }
     return false;
 }
-// Função para desenhar o score
+
 function drawScore() {
     ctx.font = `${parseInt(gameConfig.scoreFont) * scaleFactor * 24}px DemonSker`;
     ctx.fillStyle = gameConfig.scoreColor;
@@ -611,7 +682,6 @@ function drawScore() {
     ctx.fillText(`Score: ${score}`, canvas.width - 10 * scaleFactor, 50 * scaleFactor);
 }
 
-// Função para desenhar a mensagem "Press to Play"
 function drawPauseMessage() {
     if (isPaused && showPauseMessage) {
         ctx.font = `${parseInt(gameConfig.pauseMessageFont) * scaleFactor * 30}px DemonSker`;
@@ -620,13 +690,10 @@ function drawPauseMessage() {
         ctx.fillText('Press to Play!', canvas.width / 2, canvas.height / 4);
     }
 }
-
-// Piscar mensagem "Press to Play"
 setInterval(() => {
     if (isPaused) showPauseMessage = !showPauseMessage;
 }, 500);
 
-// Função principal do jogo
 function update() {
     if (!gameStarted) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -643,9 +710,8 @@ function update() {
     if (isPaused) {
         drawPauseMessage();
     } else {
-        // Move o background e o chão apenas quando o jogo está ativo
-        backgroundX -= gameConfig.backgroundSpeed * scaleFactor; // Ajusta a velocidade com scaleFactor
-        groundX -= gameConfig.groundSpeed * scaleFactor;         // Ajusta a velocidade do chão com scaleFactor
+        backgroundX -= gameConfig.backgroundSpeed * scaleFactor;
+        groundX -= gameConfig.groundSpeed * scaleFactor;
         frame++;
         updateBird();
         createObstacles();
@@ -657,76 +723,69 @@ function update() {
     requestAnimationFrame(update);
 }
 
-// Função para iniciar o jogo
 function startGame() {
     startScreen.style.display = 'none';
     resetGame();
-    update(); // Garantir que o loop comece
+    update();
 }
 
-// Função para terminar o jogo
 function endGame() {
     gameStarted = false;
     isPaused = false;
+    hitSound.pause();
+    hitSound.currentTime = 0;
+    hitSound.play();
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('highScore', highScore);
     }
     const gameStateImage = canvas.toDataURL('image/png');
-
-    // Criar ou reutilizar um elemento <img> para o fundo
+    setTimeout(() => {
+        wastedSound.pause();
+        wastedSound.currentTime = 0;
+        wastedSound.play();
+    }, 100);
     let backgroundImageElement = document.getElementById('gameOverBackgroundImage');
     if (!backgroundImageElement) {
         backgroundImageElement = document.createElement('img');
         backgroundImageElement.id = 'gameOverBackgroundImage';
         backgroundImageElement.style.position = 'absolute';
-        backgroundImageElement.style.zIndex = '-1'; // Fica atrás dos outros elementos
-        backgroundImageElement.style.imageRendering = 'pixelated'; // Garantir nitidez ao escalar
-        document.body.appendChild(backgroundImageElement); // Adicionar ao body
+        backgroundImageElement.style.zIndex = '-1';
+        backgroundImageElement.style.imageRendering = 'pixelated';
+        document.body.appendChild(backgroundImageElement);
 
-        // Função para ajustar o tamanho e posição do fundo dinamicamente
         function updateBackgroundSize() {
-            updateScreenDimensions(backgroundImageElement); // Usar a função existente para ajustar
+            updateScreenDimensions(backgroundImageElement);
         }
 
-        // Adicionar listener de resize para ajustar dinamicamente
         window.addEventListener('resize', updateBackgroundSize);
     }
+    backgroundImageElement.style.filter = 'none';
+    backgroundImageElement.style.transition = 'none';
+    backgroundImageElement.src = gameStateImage;
 
-    // Resetar completamente o filtro e a transição
-    backgroundImageElement.style.filter = 'none'; // Resetar para nenhum filtro
-    backgroundImageElement.style.transition = 'none'; // Remover transição temporariamente
-    backgroundImageElement.src = gameStateImage; // Aplicar a imagem
-
-    // Ajustar o tamanho e posição inicial com updateScreenDimensions
     updateScreenDimensions(backgroundImageElement);
 
-    // Forçar um reflow para garantir que o reset seja aplicado antes da transição
-    void backgroundImageElement.offsetWidth; // Forçar reflow
+    void backgroundImageElement.offsetWidth;
 
-    // Aplicar a transição e o estado inicial do filtro
     backgroundImageElement.style.transition = 'filter 1.5s ease';
     backgroundImageElement.style.filter = 'grayscale(0%)';
-
-    // Aplicar o filtro com transição após um pequeno delay
     setTimeout(() => {
         backgroundImageElement.style.filter = 'grayscale(100%)';
-    }, 100); // Delay de 100ms para garantir a transição
+    }, 100);
 
-    // Configurar o gameOverScreen sem fundo direto
+    // gameOverScreen
     gameOverScreen.style.background = 'none';
     document.getElementById('highScore').textContent = `Highest Score: ${highScore}`;
     document.getElementById('currentScore').textContent = `Score: ${score}`;
     document.getElementById('gameOverHighScore').textContent = `Highest Score: ${highScore}`;
     gameOverScreen.style.display = 'flex';
-
-    // Garantir que os elementos específicos não sejam afetados pelo filtro
     closeButton.style.filter = 'none';
     document.getElementById('currentScore').style.filter = 'none';
     document.getElementById('gameOverHighScore').style.filter = 'none';
     document.getElementById('retryButton').style.filter = 'none';
 
-    // Animação do sprite "Game Over"
+    // GameOver Animation
     const gameOverSprite = document.getElementById('gameOverSprite');
     let frameWidth = parseFloat(gameOverSprite.dataset.frameWidth) || 200 * scaleFactor;
     const totalFrames = parseInt(gameOverSprite.dataset.totalFrames) || 20;
@@ -748,26 +807,24 @@ function endGame() {
     closeButton.addEventListener('click', () => clearInterval(animationInterval), { once: true });
     document.getElementById('retryButton').addEventListener('click', () => {
         clearInterval(animationInterval);
-        gameOverSprite.dataset.currentFrame = 0; // Resetar frame ao reiniciar
+        gameOverSprite.dataset.currentFrame = 0;
     }, { once: true });
 }
-
 
 function resetGame() {
     bird.y = gameConfig.birdStartY * scaleFactor,
     bird.velocity = 0;
-    bird.rotation = 0; // Garante que a rotação seja zerada ao reiniciar
+    bird.rotation = 0;
     obstacles = [];
     frame = 0;
     score = 0;
     gameStarted = true;
-    isPaused = true; // Aqui o "Press to Play!" aparece
+    isPaused = true;
     gameOverScreen.style.display = 'none';
     const gameOverSprite = document.getElementById('gameOverSprite');
     gameOverSprite.style.backgroundPosition = '0px 0px';
 }
 
-// Função para voltar à tela inicial
 function returnToStart() {
     gameStarted = false;
     isPaused = false;
@@ -776,12 +833,21 @@ function returnToStart() {
     startScreen.style.display = 'flex';
 }
 
-// Eventos
-document.getElementById('startButton').addEventListener('click', startGame);
-document.getElementById('retryButton').addEventListener('click', () => {
-    resetGame();
-    update(); // Reiniciar o loop
+document.getElementById('startButton').addEventListener('click', () => {
+    startSound.pause();
+    startSound.currentTime = 0;
+    startSound.play();
+    startGame();
 });
+
+document.getElementById('retryButton').addEventListener('click', () => {
+    startSound.pause();
+    startSound.currentTime = 0;
+    startSound.play();
+    resetGame();
+    update();
+});
+
 closeButton.addEventListener('click', returnToStart);
 canvas.addEventListener('click', () => {
     if (gameStarted) {
@@ -792,5 +858,5 @@ canvas.addEventListener('click', () => {
         }
     }
 });
-// Iniciar o loop para garantir que o canvas esteja limpo
+
 requestAnimationFrame(update);
