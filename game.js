@@ -34,6 +34,7 @@ const gameConfig = {
 // Images
 const startBackgroundUrl = '../img/backgroundstartgame.png';
 const gameOverBackgroundUrl = '../img/backgroundgameover.png';
+const settingsBackgroundUrl = '../img/backgroundsettings.png';
 const startButtonUrl = '../img/startbutton.png';
 const retryButtonUrl = '../img/retrybutton.png';
 const closeButtonUrl = '../img/closebutton.png';
@@ -48,6 +49,23 @@ const hitSound = new Audio('../sfx/hit.wav');
 const wingSound = new Audio('../sfx/wing.wav');
 const pointSound = new Audio('../sfx/point.wav');
 const wastedSound = new Audio('../sfx/wasted.wav');
+const introMusic = new Audio('../sfx/intro.mp3');
+introMusic.loop = true;
+
+function fadeOutMusic(audio, duration = 1000) {
+    let volume = audio.volume;
+    const fadeStep = volume / (duration / 50);
+    const fadeInterval = setInterval(() => {
+        volume -= fadeStep;
+        if (volume <= 0) {
+            audio.pause();
+            audio.volume = 1;
+            clearInterval(fadeInterval);
+        } else {
+            audio.volume = volume;
+        }
+    }, 50);
+}
 
 // Themes
 const themes = {
@@ -200,9 +218,9 @@ function createScreen(id, background, elements) {
             element.style.backgroundSize = `${frameWidth * totalFrames}px ${frameHeight}px`;
             element.style.backgroundPosition = '0px 0px';
             element.style.backgroundRepeat = 'no-repeat';
-            element.dataset.frameWidth = frameWidth; // Armazenar frameWidth inicial
-            element.dataset.totalFrames = totalFrames; // Armazenar totalFrames
-            element.dataset.currentFrame = 0; // Armazenar frame atual
+            element.dataset.frameWidth = frameWidth;
+            element.dataset.totalFrames = totalFrames;
+            element.dataset.currentFrame = 0;
         }
         else {
             element.textContent = el.text;
@@ -276,7 +294,7 @@ function createScreen(id, background, elements) {
             if (el.tag === 'button') {
                 element.style.padding = `${1 * newScaleFactor}rem ${2 * newScaleFactor}rem`;
                 element.style.borderRadius = `${10 * newScaleFactor}px`;
-                element.style.boxShadow = `0 ${5 * newScaleFactor}px ${10 * newScaleFactor}px rgba(0, 0, 0, 0.3)`;
+                element.style.boxShadow = `none`;
                 if (el.id === 'startButton') {
                     updateStartButtonSize(newScaleFactor);
                 }
@@ -310,11 +328,13 @@ const startScreen = createScreen('startScreen', startBackgroundUrl, [
     { tag: 'button', fontSize: 1.2, fontFamily: 'DemonSker', id: 'startButton', },
     { tag: 'highestScore', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'highScore', },
     { tag: 'div', id: 'bottomSpacer' },
+
 ]);
 startScreen.style.display = 'flex';
 startScreen.style.flexDirection = 'column';
 startScreen.style.justifyContent = 'flex-end';
 startScreen.style.alignItems = 'center';
+introMusic.play();
 
 // settingsButton
 const settingsButton = document.createElement('button');
@@ -335,28 +355,86 @@ startScreen.appendChild(settingsButton);
 settingsButton.addEventListener('mouseover', () => settingsButton.style.transform = `scale(1.35)`);
 settingsButton.addEventListener('mouseout', () => settingsButton.style.transform = `scale(1)`);
 
-// Tela de configurações
-const settingsScreen = createScreen('settingsScreen', startBackgroundUrl, [
+// SettingsScreen
+const settingsScreen = createScreen('settingsScreen', settingsBackgroundUrl, [
+    { tag: 'h1', text: 'Settings', fontSize: 2.0, id: 'settingsTitle' },
+    { tag: 'h2', text: 'Themes', fontSize: 1.5, id: 'themesSubtitle' },
     { tag: 'img', src: themeImageUrl, fontSize: 1.5, id: 'theme1Button' },
     { tag: 'img', src: theme1ImageUrl, fontSize: 1.5, id: 'theme2Button' },
     { tag: 'img', src: theme2ImageUrl, fontSize: 1.5, id: 'theme3Button' }
 ]);
-settingsScreen.style.background = 'rgba(0, 0, 0, 0.8)';
+settingsScreen.style.background = `url(${settingsBackgroundUrl}) no-repeat center center / cover, rgba(0, 0, 0, 0.8)`;
 settingsScreen.style.display = 'none';
+settingsScreen.style.flexDirection = 'column';
+settingsScreen.style.justifyContent = 'flex-start';
+settingsScreen.style.alignItems = 'center';
+settingsScreen.style.paddingTop = `${20 * scaleFactor}px`;
 
+const contentContainer = document.createElement('div');
+contentContainer.style.display = 'flex';
+contentContainer.style.flexDirection = 'column';
+contentContainer.style.alignItems = 'center';
+contentContainer.style.justifyContent = 'center';
+contentContainer.style.flexGrow = '1';
+
+const themesContainer = document.createElement('div');
+themesContainer.style.display = 'flex';
+themesContainer.style.flexDirection = 'row';
+themesContainer.style.justifyContent = 'center';
+themesContainer.style.gap = `${20 * scaleFactor}px`;
+
+const themesSubtitle = document.getElementById('themesSubtitle');
+settingsScreen.removeChild(themesSubtitle);
+contentContainer.appendChild(themesSubtitle);
+
+const themeButtons = [
+    document.getElementById('theme1Button'),
+    document.getElementById('theme2Button'),
+    document.getElementById('theme3Button')
+];
+themeButtons.forEach(button => {
+    settingsScreen.removeChild(button);
+    themesContainer.appendChild(button);
+});
+contentContainer.appendChild(themesContainer);
+settingsScreen.appendChild(contentContainer);
+
+const settingsTitle = document.getElementById('settingsTitle');
+settingsTitle.style.fontFamily = 'DemonSker';
+settingsTitle.style.color = 'red';
+settingsTitle.style.marginBottom = `${10 * scaleFactor}px`;
+settingsTitle.style.position = 'relative';
+themesSubtitle.style.fontFamily = 'DemonSker';
+themesSubtitle.style.color = '#fff';
+themesSubtitle.style.marginBottom = `${15 * scaleFactor}px`;
 
 const settingsCloseButton = document.createElement('button');
 settingsCloseButton.textContent = 'X';
 settingsCloseButton.style.position = 'absolute';
 settingsCloseButton.style.top = `${5 * scaleFactor}px`;
 settingsCloseButton.style.left = `${5 * scaleFactor}px`;
-
-settingsCloseButton.style.backgroundColor = '#ff4444';
-settingsCloseButton.style.color = '#fff';
-settingsCloseButton.style.border = 'none';
-settingsCloseButton.style.borderRadius = '50%';
-settingsCloseButton.style.cursor = 'pointer';
+settingsCloseButton.style.fontFamily = 'DemonSker';
+settingsCloseButton.style.backgroundColor = '#2b2b2b';
+settingsCloseButton.style.color = '#ff4444'; 
+settingsCloseButton.style.border = `${2 * scaleFactor}px solid #4a2c2a`;
+settingsCloseButton.style.borderRadius = `${50 * scaleFactor}px`;
+settingsCloseButton.style.padding = `${0.8 * scaleFactor}rem ${1.5 * scaleFactor}rem`;
+settingsCloseButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${3 * scaleFactor}px ${6 * scaleFactor}px rgba(0, 0, 0, 0.8)`;
+settingsCloseButton.style.textShadow = `${1 * scaleFactor}px ${1 * scaleFactor}px ${2 * scaleFactor}px #000`;
+settingsCloseButton.style.backgroundImage = 'linear-gradient(to bottom, rgba(255, 68, 68, 0.1), rgba(0, 0, 0, 0.5))';
+settingsCloseButton.style.transition = 'transform 1s, box-shadow 1s';
+settingsCloseButton.style.display = 'flex';
+settingsCloseButton.style.justifyContent = 'center';
+settingsCloseButton.style.alignItems = 'center';
 settingsCloseButton.style.fontSize = `${20 * scaleFactor}px`;
+settingsCloseButton.addEventListener('mouseover', () => {
+    settingsCloseButton.style.transform = `scale(1.1)`;
+    settingsCloseButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${5 * scaleFactor}px ${8 * scaleFactor}px rgba(255, 68, 68, 0.5)`;
+});
+settingsCloseButton.addEventListener('mouseout', () => {
+    settingsCloseButton.style.transform = `scale(1)`;
+    settingsCloseButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${3 * scaleFactor}px ${6 * scaleFactor}px rgba(0, 0, 0, 0.8)`;
+});
 settingsScreen.appendChild(settingsCloseButton);
 
 document.getElementById('theme1Button').addEventListener('click', () => {
@@ -473,19 +551,53 @@ const gameOverScreen = createScreen('gameOverScreen', gameOverBackgroundUrl, [
     { tag: 'div', id: 'gameOverSprite', fontSize: 2.5 },
     { tag: 'p', text: 'Score: 0', fontSize: 1.2, id: 'currentScore' },
     { tag: 'p', text: `Highest Score: ${highScore}`, fontSize: 1.2, id: 'gameOverHighScore' },
-    { tag: 'button', text: 'Retry', fontSize: 1.2, id: 'retryButton', bgColor: '#f44336' },
+    { tag: 'button', text: 'Retry', fontSize: 2, id: 'retryButton', bgColor: '#f44336' },
 ]);
+
+
+const retryButton = document.getElementById('retryButton');
+retryButton.style.fontFamily = 'DemonSker';
+retryButton.style.backgroundColor = '#2b2b2b';
+retryButton.style.color = 'red';
+retryButton.style.border = `${2 * scaleFactor}px solid #4a2c2a`;
+retryButton.style.borderRadius = `${5 * scaleFactor}px`;
+retryButton.style.padding = `${0.8 * scaleFactor}rem ${1.5 * scaleFactor}rem`;
+retryButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${3 * scaleFactor}px ${6 * scaleFactor}px rgba(0, 0, 0, 0.8)`;
+retryButton.style.textShadow = `${1 * scaleFactor}px ${1 * scaleFactor}px ${2 * scaleFactor}px #000`;
+retryButton.style.backgroundImage = 'linear-gradient(to bottom, rgba(113, 34, 34, 0.65), rgba(21, 18, 18, 0.5))';
+retryButton.style.transition = 'transform 1s, box-shadow 1s'; 
+retryButton.addEventListener('mouseover', () => {
+    retryButton.style.transform = `scale(1.1)`;
+    retryButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${5 * scaleFactor}px ${8 * scaleFactor}px rgba(255, 68, 68, 0.5)`;
+});
+retryButton.addEventListener('mouseout', () => {
+    retryButton.style.transform = `scale(1)`;
+    retryButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${3 * scaleFactor}px ${6 * scaleFactor}px rgba(0, 0, 0, 0.8)`;
+});
 const closeButton = document.createElement('button');
 closeButton.textContent = 'X';
 closeButton.style.position = 'absolute';
-closeButton.style.backgroundColor = '#ff4444';
-closeButton.style.color = '#fff';
-closeButton.style.border = 'none';
-closeButton.style.borderRadius = '50%';
-closeButton.style.cursor = 'pointer';
+closeButton.style.fontFamily = 'DemonSker';
+closeButton.style.backgroundColor = '#2b2b2b';
+closeButton.style.color = '#ff4444';
+closeButton.style.border = `${2 * scaleFactor}px solid #4a2c2a`;
+closeButton.style.borderRadius = `${50 * scaleFactor}px`;
+closeButton.style.padding = `${0.8 * scaleFactor}rem ${1.5 * scaleFactor}rem`;
+closeButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${3 * scaleFactor}px ${6 * scaleFactor}px rgba(0, 0, 0, 0.8)`;
+closeButton.style.textShadow = `${1 * scaleFactor}px ${1 * scaleFactor}px ${2 * scaleFactor}px #000`;
+closeButton.style.backgroundImage = 'linear-gradient(to bottom, rgba(255, 68, 68, 0.1), rgba(0, 0, 0, 0.5))';
+closeButton.style.transition = 'transform 1s, box-shadow 1s';
 closeButton.style.display = 'flex';
 closeButton.style.justifyContent = 'center';
 closeButton.style.alignItems = 'center';
+closeButton.addEventListener('mouseover', () => {
+    closeButton.style.transform = `scale(1.1)`;
+    closeButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${5 * scaleFactor}px ${8 * scaleFactor}px rgba(255, 68, 68, 0.5)`;
+});
+closeButton.addEventListener('mouseout', () => {
+    closeButton.style.transform = `scale(1)`;
+    closeButton.style.boxShadow = `inset 0 ${2 * scaleFactor}px ${5 * scaleFactor}px rgba(0, 0, 0, 0.6), 0 ${3 * scaleFactor}px ${6 * scaleFactor}px rgba(0, 0, 0, 0.8)`;
+});
 gameOverScreen.appendChild(closeButton);
 
 updateAllScreens();
@@ -725,6 +837,7 @@ function update() {
 
 function startGame() {
     startScreen.style.display = 'none';
+    fadeOutMusic(introMusic);
     resetGame();
     update();
 }
@@ -739,6 +852,7 @@ function endGame() {
         highScore = score;
         localStorage.setItem('highScore', highScore);
     }
+    fadeOutMusic(introMusic);
     const gameStateImage = canvas.toDataURL('image/png');
     setTimeout(() => {
         wastedSound.pause();
@@ -823,6 +937,8 @@ function resetGame() {
     gameOverScreen.style.display = 'none';
     const gameOverSprite = document.getElementById('gameOverSprite');
     gameOverSprite.style.backgroundPosition = '0px 0px';
+    wastedSound.pause();
+    wastedSound.currentTime = 0;
 }
 
 function returnToStart() {
@@ -848,7 +964,14 @@ document.getElementById('retryButton').addEventListener('click', () => {
     update();
 });
 
-closeButton.addEventListener('click', returnToStart);
+closeButton.addEventListener('click', () => {
+    returnToStart();
+    wastedSound.pause();
+    wastedSound.currentTime = 0;
+    introMusic.currentTime = 0;
+    introMusic.play();
+});
+
 canvas.addEventListener('click', () => {
     if (gameStarted) {
         if (isPaused) {
